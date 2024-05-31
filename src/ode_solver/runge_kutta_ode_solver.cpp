@@ -18,124 +18,60 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
 {
     this->original_time_step = dt;
     this->solution_update = this->dg->solution; //storing u_n
-
+    (void) pseudotime;
     //My first change.
 
-    //calculating stages **Note that rk_stage[i] stores the RHS at a partial time-step (not solution u)
-    for (int i = 0; i < n_rk_stages; ++i){
+    const double gamma[6][3] = {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {-0.497531095840104, 1.384996869124138, 0.0}, {1.010070514199942, 3.878155713328178, 0.0}, {-3.196559004608766,-2.324512951813145, 1.642598936063715}, {1.717835630267259, -0.514633322274467, 0.188295940828347}};
+    double beta[6] = {0.0, 0.075152045700771, 0.211361016946069, 1.100713347634329, 0.728537814675568, 0.393172889823198};
+    double delta[7] = {1.0, 0.081252332929194, -1.083849060586449, -1.096110881845602, 2.859440022030827, -0.655568367959557, -0.194421504490852};
+    // double beta_controller[3] = {0.70, -0.40, 0.0}; // PI34
 
-        this->rk_stage[i]=0.0; //resets all entries to zero
-        
-        for (int j = 0; j < i; ++j){
-            if (this->butcher_tableau->get_a(i,j) != 0){
-                this->rk_stage[i].add(this->butcher_tableau->get_a(i,j), this->rk_stage[j]);
-            }
-        } //sum(a_ij *k_j), explicit part
+    dealii::LinearAlgebra::distributed::Vector<double> s2;
+    s2.reinit(this->solution_update);
+    s2*=0;
+    dealii::LinearAlgebra::distributed::Vector<double> s3;
+    s3.reinit(this->solution_update);
+    s3 = this->dg->solution;
+    dealii::LinearAlgebra::distributed::Vector<double> rhs;
+    rhs.reinit(this->solution_update);
+    rhs*=0;
+    dealii::LinearAlgebra::distributed::Vector<double> u_hat;
+    u_hat.reinit(this->solution_update);
+    u_hat = s2;
 
-        
-        if(pseudotime) {
-            const double CFL = dt;
-            this->dg->time_scale_solution_update(rk_stage[i], CFL);
-        }else {
-            this->rk_stage[i]*=dt; 
-        }//dt * sum(a_ij * k_j)
-        
-        this->rk_stage[i].add(1.0,this->solution_update); //u_n + dt * sum(a_ij * k_j)
-       
-        //implicit solve if there is a nonzero diagonal element
-        if (!this->butcher_tableau_aii_is_zero[i]){
-            /* // AD version - keeping in comments as it may be useful for future testing
-            // Solve (M/dt - dRdW) / a_ii * dw = R
-            // w = w + dw
-            // Note - need to have assembled residual using this->dg->assemble_residual(true);
-            //        and have mass matrix assembled, and include linear_solver
-            dealii::LinearAlgebra::distributed::Vector<double> temp_u(this->dg->solution.size());
-
-            this->dg->system_matrix *= -1.0/butcher_tableau_a[i][i]; //system_matrix = -1/a_ii*dRdW
-            this->dg->add_mass_matrices(1.0/butcher_tableau_a[i][i]/dt); //system_matrix = -1/a_ii*dRdW + M/dt/a_ii = A
-
-            solve_linear ( //Solve Ax=b using Aztec00 gmres
-                        this->dg->system_matrix, //A = -1/a_ii*dRdW + M/dt/a_ii
-                        this->dg->right_hand_side, //b = R
-                        temp_u, // result,  x = dw
-                        this->ODESolverBase<dim,real,MeshType>::all_parameters->linear_solver_param);
-
-            this->rk_stage[i].add(1.0, temp_u);
-            */
-
-            //JFNK version
-            solver.solve(dt*this->butcher_tableau->get_a(i,i), this->rk_stage[i]);
-            this->rk_stage[i] = solver.current_solution_estimate;
-
-        } // u_n + dt * sum(a_ij * k_j) <explicit> + dt * a_ii * u^(i) <implicit>
-        
-        // If using the entropy formulation of RRK, solutions must be stored.
-        // Call store_stage_solutions before overwriting rk_stage with the derivative.
-        relaxation_runge_kutta->store_stage_solutions(i, rk_stage[i]);
-
-        this->dg->solution = this->rk_stage[i];
-
-        // Apply limiter at every RK stage
-        if (this->limiter) {
-            this->limiter->limit(this->dg->solution,
-                this->dg->dof_handler,
-                this->dg->fe_collection,
-                this->dg->volume_quadrature_collection,
-                this->dg->high_order_grid->fe_system.tensor_degree(),
-                this->dg->max_degree,
-                this->dg->oneD_fe_collection_1state,
-                this->dg->oneD_quadrature_collection);
-        }
-
-        //set the DG current time for unsteady source terms
-        this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(i)*dt);
-        
-        //solve the system's right hande side
-        this->dg->assemble_residual(); //RHS : du/dt = RHS = F(u_n + dt* sum(a_ij*k_j) + dt * a_ii * u^(i)))
-
-        if(this->all_parameters->use_inverse_mass_on_the_fly){
-            this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, this->rk_stage[i]); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
-        } else{
-            this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[i], this->dg->right_hand_side); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
-        }
-    }
-
-    // Calculates relaxation parameter and modify the time step size as dt*=relaxation_parameter.
-    // if not using RRK, the relaxation parameter will be set to 1, such that dt is not modified.
-    this->relaxation_parameter_RRK_solver = relaxation_runge_kutta->update_relaxation_parameter(dt, this->dg, this->rk_stage, this->solution_update);
-    dt *= this->relaxation_parameter_RRK_solver;
-    this->modified_time_step = dt;
-
-    //assemble solution from stages
-    for (int i = 0; i < n_rk_stages; ++i){
-        if (pseudotime){
-            const double CFL = this->butcher_tableau->get_b(i) * dt;
-            this->dg->time_scale_solution_update(this->rk_stage[i], CFL);
-            this->solution_update.add(1.0, this->rk_stage[i]);
-        } else {
-            this->solution_update.add(dt* this->butcher_tableau->get_b(i),this->rk_stage[i]); 
-        }
-    }
-    this->dg->solution = this->solution_update; // u_np1 = u_n + dt* sum(k_i * b_i)
-
-    // Calculate numerical entropy with FR correction. Does nothing if use has not selected param.
-    this->FR_entropy_contribution_RRK_solver = relaxation_runge_kutta->compute_FR_entropy_contribution(dt, this->dg, this->rk_stage, true);
-
-    // Apply limiter at every RK stage
-    if (this->limiter) {
-        this->limiter->limit(this->dg->solution,
-            this->dg->dof_handler,
-            this->dg->fe_collection,
-            this->dg->volume_quadrature_collection,
-            this->dg->high_order_grid->fe_system.tensor_degree(),
-            this->dg->max_degree,
-            this->dg->oneD_fe_collection_1state,
-            this->dg->oneD_quadrature_collection);
-    }
+    dealii::LinearAlgebra::distributed::Vector<double> s1 = s3;
     
+    int m = 5;
+    double sum_delta = 0;
+
+    for (int i = 1; i < m+1; i++ ){
+        // s2 = s2 + delta[i-1] * s1;
+        s2.add(delta[i-1] , s1);
+        this->dg->solution = rhs;
+        this->dg->assemble_residual();
+        this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, rhs);
+        // s1 = gamma[i][0] * s1 + gamma[i][1] * s2 + gamma[i][2] * s3 + beta[i-1] * dt * rhs; 
+        s1 *= gamma[i][0];
+        s1.add(gamma[i][1], s2);
+        s1.add(gamma[i][2], s3);
+        rhs *= dt;
+        s1.add(beta[i-1], rhs);
+        // s1 += gamma[i][1] * s2;
+        // Vector< double > s2 & operator+= gamma [i][0];
+        // virtual Vector<>
+    }
+    for (int i = 0; i<m+2; i++){
+        sum_delta = sum_delta + delta[i];
+    }
+    // s2 = (s2 + delta[m] * s1 + delta[m+1] * s3) / sum_delta;
+
+    this->dg->solution = s1;
+    u_hat = s2;
+
     ++(this->current_iteration);
     this->current_time += dt;
-}
+    
+    }
 
 template <int dim, typename real, int n_rk_stages, typename MeshType> 
 void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
@@ -169,7 +105,6 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
         if (this->butcher_tableau->get_a(i,i)==0.0)     this->butcher_tableau_aii_is_zero[i] = true;
     }
 }
-
 template class RungeKuttaODESolver<PHILIP_DIM, double,1, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,2, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,3, dealii::Triangulation<PHILIP_DIM> >;
