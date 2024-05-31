@@ -32,12 +32,12 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
     dealii::LinearAlgebra::distributed::Vector<double> s3;
     s3.reinit(this->solution_update);
     s3 = this->dg->solution;
-    dealii::LinearAlgebra::distributed::Vector<double> rhs;
-    rhs.reinit(this->solution_update);
-    rhs*=0;
-    dealii::LinearAlgebra::distributed::Vector<double> u_hat;
-    u_hat.reinit(this->solution_update);
-    u_hat = s2;
+    dealii::LinearAlgebra::distributed::Vector<double> rhs = s3;
+    //rhs.reinit(this->solution_update);
+    //rhs = s3;
+    dealii::LinearAlgebra::distributed::Vector<double> u_hat = s2;
+    //u_hat.reinit(this->solution_update);
+    //u_hat = s2;
 
     dealii::LinearAlgebra::distributed::Vector<double> s1 = s3;
     
@@ -47,7 +47,7 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
     for (int i = 1; i < m+1; i++ ){
         // s2 = s2 + delta[i-1] * s1;
         s2.add(delta[i-1] , s1);
-        this->dg->solution = rhs;
+        this->dg->solution = s1;
         this->dg->assemble_residual();
         this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, rhs);
         // s1 = gamma[i][0] * s1 + gamma[i][1] * s2 + gamma[i][2] * s3 + beta[i-1] * dt * rhs; 
@@ -56,21 +56,23 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
         s1.add(gamma[i][2], s3);
         rhs *= dt;
         s1.add(beta[i-1], rhs);
-        // s1 += gamma[i][1] * s2;
-        // Vector< double > s2 & operator+= gamma [i][0];
-        // virtual Vector<>
+        rhs = s1;
+
     }
     for (int i = 0; i<m+2; i++){
         sum_delta = sum_delta + delta[i];
     }
     // s2 = (s2 + delta[m] * s1 + delta[m+1] * s3) / sum_delta;
+    s2.add(delta[m], s1);
+    s2.add(delta[m+1], s3);
+    s2 /= sum_delta;
 
     this->dg->solution = s1;
     u_hat = s2;
 
     ++(this->current_iteration);
     this->current_time += dt;
-    
+
     }
 
 template <int dim, typename real, int n_rk_stages, typename MeshType> 
