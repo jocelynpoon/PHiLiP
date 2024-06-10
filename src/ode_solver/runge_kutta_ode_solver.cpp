@@ -72,7 +72,7 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
 
     ++(this->current_iteration);
     this->current_time += dt;
-
+    this->pcout << "Time is: " << this->current_time <<std::endl;
     }
 
 template <int dim, typename real, int n_rk_stages, typename MeshType> 
