@@ -32,14 +32,14 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
     dealii::LinearAlgebra::distributed::Vector<double> s3;
     s3.reinit(this->solution_update);
     s3 = this->dg->solution;
-    dealii::LinearAlgebra::distributed::Vector<double> rhs = s3;
+    dealii::LinearAlgebra::distributed::Vector<double> s1 = s3;
     //rhs.reinit(this->solution_update);
     //rhs = s3;
     dealii::LinearAlgebra::distributed::Vector<double> u_hat = s2;
     //u_hat.reinit(this->solution_update);
     //u_hat = s2;
 
-    dealii::LinearAlgebra::distributed::Vector<double> s1 = s3;
+    dealii::LinearAlgebra::distributed::Vector<double> rhs = s1;
     
     int m = 5;
     double sum_delta = 0;
@@ -47,7 +47,7 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
     for (int i = 1; i < m+1; i++ ){
         // s2 = s2 + delta[i-1] * s1;
         s2.add(delta[i-1] , s1);
-        this->dg->solution = s1;
+        this->dg->solution = rhs;
         this->dg->assemble_residual();
         this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, rhs);
         // s1 = gamma[i][0] * s1 + gamma[i][1] * s2 + gamma[i][2] * s3 + beta[i-1] * dt * rhs; 
@@ -55,7 +55,7 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
         s1.add(gamma[i][1], s2);
         s1.add(gamma[i][2], s3);
         rhs *= dt;
-        s1.add(beta[i-1], rhs);
+        s1.add(beta[i], rhs);
         rhs = s1;
 
     }
