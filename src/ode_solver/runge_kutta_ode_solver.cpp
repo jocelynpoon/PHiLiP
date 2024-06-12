@@ -5,7 +5,7 @@ namespace ODE {
 
 template <int dim, typename real, int n_rk_stages, typename MeshType> 
 RungeKuttaODESolver<dim,real,n_rk_stages, MeshType>::RungeKuttaODESolver(std::shared_ptr< DGBase<dim, real, MeshType> > dg_input,
-        std::shared_ptr<RKTableauBase<dim,real,MeshType>> rk_tableau_input,
+        std::shared_ptr<LowStorageRKTableauBase<dim,real,MeshType>> rk_tableau_input,
         std::shared_ptr<EmptyRRKBase<dim,real,MeshType>> RRK_object_input)
         : ODESolverBase<dim,real,MeshType>(dg_input)
         , butcher_tableau(rk_tableau_input)
@@ -21,11 +21,11 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
     (void) pseudotime;
     //My first change.
 
-    const double gamma[6][3] = {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {-0.497531095840104, 1.384996869124138, 0.0}, {1.010070514199942, 3.878155713328178, 0.0}, {-3.196559004608766,-2.324512951813145, 1.642598936063715}, {1.717835630267259, -0.514633322274467, 0.188295940828347}};
-    double beta[6] = {0.0, 0.075152045700771, 0.211361016946069, 1.100713347634329, 0.728537814675568, 0.393172889823198};
-    double delta[7] = {1.0, 0.081252332929194, -1.083849060586449, -1.096110881845602, 2.859440022030827, -0.655568367959557, -0.194421504490852};
+    //const double gamma[6][3] = {{0.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {-0.497531095840104, 1.384996869124138, 0.0}, {1.010070514199942, 3.878155713328178, 0.0}, {-3.196559004608766,-2.324512951813145, 1.642598936063715}, {1.717835630267259, -0.514633322274467, 0.188295940828347}};
+    //double beta[6] = {0.0, 0.075152045700771, 0.211361016946069, 1.100713347634329, 0.728537814675568, 0.393172889823198};
+    //double delta[7] = {1.0, 0.081252332929194, -1.083849060586449, -1.096110881845602, 2.859440022030827, -0.655568367959557, -0.194421504490852};
     // double beta_controller[3] = {0.70, -0.40, 0.0}; // PI34
-
+    
     dealii::LinearAlgebra::distributed::Vector<double> s2;
     s2.reinit(this->solution_update);
     s2*=0;
@@ -46,25 +46,25 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, 
 
     for (int i = 1; i < m+1; i++ ){
         // s2 = s2 + delta[i-1] * s1;
-        s2.add(delta[i-1] , s1);
+        s2.add(this->butcher_tableau->get_delta(i-1) , s1);
         this->dg->solution = rhs;
         this->dg->assemble_residual();
         this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, rhs);
-        // s1 = gamma[i][0] * s1 + gamma[i][1] * s2 + gamma[i][2] * s3 + beta[i-1] * dt * rhs; 
-        s1 *= gamma[i][0];
-        s1.add(gamma[i][1], s2);
-        s1.add(gamma[i][2], s3);
+        // s1 = gamma[i][0] * s1 + gamma[i][1] * s2 + gamma[i][2] * s3 + beta[i] * dt * rhs; 
+        s1 *= this->butcher_tableau->get_gamma(i, 0);
+        s1.add(this->butcher_tableau->get_gamma(i, 1), s2);
+        s1.add(this->butcher_tableau->get_gamma(i, 2), s3);
         rhs *= dt;
-        s1.add(beta[i], rhs);
+        s1.add(this->butcher_tableau->get_beta(i), rhs);
         rhs = s1;
 
     }
     for (int i = 0; i<m+2; i++){
-        sum_delta = sum_delta + delta[i];
+        sum_delta = sum_delta + this->butcher_tableau->get_delta(i);
     }
     // s2 = (s2 + delta[m] * s1 + delta[m+1] * s3) / sum_delta;
-    s2.add(delta[m], s1);
-    s2.add(delta[m+1], s3);
+    s2.add(this->butcher_tableau->get_delta(m), s1);
+    s2.add(this->butcher_tableau->get_delta(m+1), s3);
     s2 /= sum_delta;
 
     this->dg->solution = s1;
@@ -86,10 +86,13 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
         //RRK needs both mass matrix and inverse mass matrix
         using ODEEnum = Parameters::ODESolverParam::ODESolverEnum;
         ODEEnum ode_type = this->ode_param.ode_solver_type;
+ 
         if (ode_type == ODEEnum::rrk_explicit_solver){
             this->dg->evaluate_mass_matrices(false); // creates and stores global mass matrix
         }
+ 
     }
+    /*
     this->pcout << std::endl;
 
     this->rk_stage.resize(n_rk_stages);
@@ -105,8 +108,9 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
               false); 
     for (int i=0; i<n_rk_stages; ++i) {
         if (this->butcher_tableau->get_a(i,i)==0.0)     this->butcher_tableau_aii_is_zero[i] = true;
+        */
     }
-}
+
 template class RungeKuttaODESolver<PHILIP_DIM, double,1, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,2, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,3, dealii::Triangulation<PHILIP_DIM> >;
