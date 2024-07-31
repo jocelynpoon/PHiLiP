@@ -29,12 +29,19 @@ set use_inverse_mass_on_the_fly = true
 # ODE solver
 subsection ODE solver
   set ode_output = verbose
-  set ode_solver_type = runge_kutta
+  set ode_solver_type = low_storage_runge_kutta
   set initial_time_step = 0.00000001
   #set output_solution_every_x_steps = 5
-  set runge_kutta_method = ssprk3_ex
+  set runge_kutta_method = RK3_2_5F_3SStarPlus
   set print_iteration_modulo = 1
   set output_solution_every_dt_time_intervals = 0.01
+  subsection low-storage rk solver
+    set atol = 0.00001
+    set rtol = 0.00001
+    set beta1 = 0.70
+    set beta2 = -0.23
+    set beta3 = 0.0
+  end
 end
 
 # freestream Mach number
