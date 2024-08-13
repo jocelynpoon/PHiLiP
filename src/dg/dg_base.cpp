@@ -2652,6 +2652,8 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
 
         int istate = 0;
         int ishape = 0;
+        double n0 = 0.0;
+        double n1 = 0.0;
 
         //this->pcout << " nstate " << nstate <<std::endl;
 
@@ -2660,38 +2662,61 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
         for (unsigned int idof = 0; idof < n_dofs_cell; ++idof) {
             istate = fe_collection[poly_degree].system_to_component_index(idof).first;
             ishape = fe_collection[poly_degree].system_to_component_index(idof).second;
-            if (istate = nstate-1){
-                soln_coeff[idof] = solution[current_dofs_indices[idof]];
-                this->pcout << " soln coeff " << soln_coeff[ishape] <<std::endl;
+            if (istate == nstate-1){
+                soln_coeff[ishape] = solution[current_dofs_indices[idof]];
+             //   this->pcout << " soln coeff 1 " << soln_coeff[ishape] <<std::endl;
+                if (idof == n_dofs_cell - 1){
+                    n0 = soln_coeff[ishape];
+            //    this->pcout << "n0 "<< n0<<std::endl;
+            }
+            if (idof == n_dofs_cell - 2){
+                n1 = soln_coeff[ishape];
+            //    this->pcout << "n1 "<< n1<<std::endl;
+            }
+            modal_1 += pow(soln_coeff[ishape], 2);
+            if (idof < n_dofs_cell -1){
+                modal_2 += pow(soln_coeff[ishape], 2);
+            }
             }
         }
        // std::abort();
 
-        //this->pcout << " ndofs " << n_dofs_cell <<std::endl;
+ /*       //this->pcout << " ndofs " << n_dofs_cell <<std::endl;
         for (unsigned int j = 0; j < n_dofs_cell; j++){
             //this->pcout << " soln coeff 1" << soln_coeff[j] <<std::endl;
             modal_1 += pow(soln_coeff[j], 2);
+            if (j == n_dofs_cell - 1){
+                this->pcout << "m "<< soln_coeff[j]<<std::endl;
+            }
+            if (j == n_dofs_cell - 2){
+                this->pcout << "m2 "<< soln_coeff[j]<<std::endl;
+            }
         }
-        this->pcout << " modal 1 " << modal_1 <<std::endl;
+        */
 
+       // this->pcout << " modal 1 " << modal_1 <<std::endl;
+/*
         //this->pcout<< "m1" << pow(soln_coeff[n_dofs_cell-1], 2) <<std::endl;
+        
+        this->pcout << " sol1 " << soln_coeff[n_dofs_cell-1] <<std::endl;
+        */
+        modal_1 = pow(n0, 2) / modal_1;
 
-        modal_1 = pow(soln_coeff[n_dofs_cell-1], 2) / modal_1;
-
-        this->pcout << " modal 1 " << modal_1 <<std::endl;
-
+        //this->pcout << " m1 " << modal_1 <<std::endl;
+/*
         for (unsigned int j = 0; j < n_dofs_cell-1; j++){
             modal_2 += pow(soln_coeff[j], 2);
         }
-        modal_2 = pow(soln_coeff[n_dofs_cell-2], 2) / modal_2;
+        */
+        modal_2 = pow(n1, 2) / modal_2;
 
-        //this->pcout << " modal 2 " << modal_2 <<std::endl;
+     //   this->pcout << " modal 2 " << modal_2 <<std::endl;
 
         energy = std::max(modal_1, modal_2);
 
-        this->pcout << " energy " << energy <<std::endl;
+      //  this->pcout << " energy " << energy <<std::endl;
 
-        //std::abort();
+      //  std::abort();
 
         //threshold_value = 0.5 * pow(10, -1.8 * (pow((ishape + 1), 0.25))); 
 /*
@@ -2706,7 +2731,7 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
             blending_function = 1.0;
         }
         */
-        //this->modal_sensor_cell[cell_index] = energy;
+        this->modal_sensor_cell[cell_index] = energy;
         //std::abort();
 
         // ************************* Adaptive Flux Reconstruction Steps ************************* //
@@ -2732,7 +2757,7 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
                 else{
                     // ************************* Adaptive Flux Reconstruction Steps ************************* //
                     if (FR_Type == FR_enum::cAdaptive) {
-                        if (energy > this->all_parameters->shock_sensor_threshold) {
+                        if (energy < this->all_parameters->shock_sensor_threshold) {
                             mass_inv_cPlus.matrix_vector_mult_1D(local_input_vector, local_output_vector,
                                 mass_inv_cPlus.oneD_vol_operator,
                                 false, 1.0 / metric_oper.det_Jac_vol[0]);
