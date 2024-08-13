@@ -458,7 +458,10 @@ public:
 
     // ************************* Adaptive Flux Reconstruction Steps ************************* //
     dealii::Vector<double> jameson_sensor_cell;
+    dealii::Vector<double> modal_sensor_cell;
     dealii::Vector<double> c_value_cell;
+    double threshold_value;
+
 
 
     /// Artificial dissipation in each cell.

@@ -65,7 +65,9 @@ DGBase<dim,real,MeshType>::DGBase(
     const unsigned int grid_degree_input,
     const std::shared_ptr<Triangulation> triangulation_input)
     : DGBase<dim,real,MeshType>(nstate_input, parameters_input, degree, max_degree_input, grid_degree_input, triangulation_input, this->create_collection_tuple(max_degree_input, nstate_input, parameters_input))
-{ }
+{   
+    //threshold_value = 0.5 * pow(10, -1.8 * (pow((ishape + 1), 0.25))); 
+    }
 
 template <int dim, typename real, typename MeshType>
 DGBase<dim,real,MeshType>::DGBase(
@@ -1783,6 +1785,7 @@ void DGBase<dim,real,MeshType>::output_results_vtk (const unsigned int cycle, co
 
     // ************************* Adaptive Flux Reconstruction Steps ************************* //
     data_out.add_data_vector(jameson_sensor_cell, "jameson_sensor", dealii::DataOut_DoFData<dealii::DoFHandler<dim>,dim>::DataVectorType::type_cell_data);
+    data_out.add_data_vector(modal_sensor_cell, "modal_sensor", dealii::DataOut_DoFData<dealii::DoFHandler<dim>,dim>::DataVectorType::type_cell_data);
     data_out.add_data_vector(c_value_cell, "c_value", dealii::DataOut_DoFData<dealii::DoFHandler<dim>,dim>::DataVectorType::type_cell_data);
 
 
@@ -1901,6 +1904,7 @@ void DGBase<dim,real,MeshType>::allocate_system (
 
     // ************************* Adaptive Flux Reconstruction Steps ************************* //
     jameson_sensor_cell.reinit(triangulation->n_active_cells());
+    modal_sensor_cell.reinit(triangulation->n_active_cells());
     c_value_cell.reinit(triangulation->n_active_cells());
 
     // allocates model variables only if there is a model
@@ -2583,6 +2587,7 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
                         mapping_basis);
 
         // ************************* Adaptive Flux Reconstruction Steps ************************* //
+
         real jameson_sensor = 0.0;
         const unsigned int n_shape_fns = n_dofs_cell / nstate;
         real f_j = 0.0, f_jm1 = 0.0, f_jp1 = 0.0;
@@ -2605,6 +2610,105 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
         }
         
         this->jameson_sensor_cell[cell_index] = jameson_sensor;
+
+
+        // ************************* Adaptive Flux Reconstruction Steps ************************* //
+
+        double modal_1 = 0.0;
+        double modal_2 = 0.0;
+        double energy = 0.0;
+        //double blending_function = 0.0;
+        //double blending_function_min = 0.001;
+        //double blending_function_max = 1.0;
+        //double sharpness_factor = 9.21024;
+
+        //std::vector<real> nstate;
+
+        //std::vector<dealii::types::global_dof_index> current_dofs_indices;
+        // Current reference element related to this physical cell
+        //const int i_fele = soln_cell->active_fe_index();
+        //const dealii::FESystem<dim, dim>& current_fe_ref = fe_collection[i_fele];
+        //const int poly_degree = current_fe_ref.tensor_degree();
+
+        //const unsigned int n_dofs_curr_cell = current_fe_ref.n_dofs_per_cell();
+
+        // Obtain the mapping from local dof indices to global dof indices
+        current_dofs_indices.resize(n_dofs_cell);
+        soln_cell->get_dof_indices(current_dofs_indices);
+
+        // Extract the local solution dofs in the cell from the global solution dofs
+        //std::array<std::vector<real>, nstate> soln_coeff;
+        std::vector<real> soln_coeff;
+
+
+       // const unsigned int n_shape_fns = n_dofs_curr_cell / nstate;
+        //real local_min_density = 1e6;
+
+
+        soln_coeff.resize(n_shape_fns);
+
+        //const unsigned int istate;
+        //const unsigned int ishape;
+
+        int istate = 0;
+        int ishape = 0;
+
+        //this->pcout << " nstate " << nstate <<std::endl;
+
+        //bool nan_check = false;
+        // Allocate solution dofs and set local min
+        for (unsigned int idof = 0; idof < n_dofs_cell; ++idof) {
+            istate = fe_collection[poly_degree].system_to_component_index(idof).first;
+            ishape = fe_collection[poly_degree].system_to_component_index(idof).second;
+            if (istate = nstate-1){
+                soln_coeff[idof] = solution[current_dofs_indices[idof]];
+                this->pcout << " soln coeff " << soln_coeff[ishape] <<std::endl;
+            }
+        }
+       // std::abort();
+
+        //this->pcout << " ndofs " << n_dofs_cell <<std::endl;
+        for (unsigned int j = 0; j < n_dofs_cell; j++){
+            //this->pcout << " soln coeff 1" << soln_coeff[j] <<std::endl;
+            modal_1 += pow(soln_coeff[j], 2);
+        }
+        this->pcout << " modal 1 " << modal_1 <<std::endl;
+
+        //this->pcout<< "m1" << pow(soln_coeff[n_dofs_cell-1], 2) <<std::endl;
+
+        modal_1 = pow(soln_coeff[n_dofs_cell-1], 2) / modal_1;
+
+        this->pcout << " modal 1 " << modal_1 <<std::endl;
+
+        for (unsigned int j = 0; j < n_dofs_cell-1; j++){
+            modal_2 += pow(soln_coeff[j], 2);
+        }
+        modal_2 = pow(soln_coeff[n_dofs_cell-2], 2) / modal_2;
+
+        //this->pcout << " modal 2 " << modal_2 <<std::endl;
+
+        energy = std::max(modal_1, modal_2);
+
+        this->pcout << " energy " << energy <<std::endl;
+
+        //std::abort();
+
+        //threshold_value = 0.5 * pow(10, -1.8 * (pow((ishape + 1), 0.25))); 
+/*
+        if (energy > threshold_value){
+            blending_function = 1 / (1+exp(-sharpness_factor/threshold_value * (energy - threshold_value)));
+        }
+
+        if (blending_function < blending_function_min){
+            blending_function = 0.0;
+        }
+        else if (1-blending_function_min < blending_function){
+            blending_function = 1.0;
+        }
+        */
+        //this->modal_sensor_cell[cell_index] = energy;
+        //std::abort();
+
         // ************************* Adaptive Flux Reconstruction Steps ************************* //
 
 
@@ -2628,7 +2732,7 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
                 else{
                     // ************************* Adaptive Flux Reconstruction Steps ************************* //
                     if (FR_Type == FR_enum::cAdaptive) {
-                        if (jameson_sensor > this->all_parameters->shock_sensor_threshold) {
+                        if (energy > this->all_parameters->shock_sensor_threshold) {
                             mass_inv_cPlus.matrix_vector_mult_1D(local_input_vector, local_output_vector,
                                 mass_inv_cPlus.oneD_vol_operator,
                                 false, 1.0 / metric_oper.det_Jac_vol[0]);
