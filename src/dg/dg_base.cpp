@@ -2617,122 +2617,46 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
         double modal_1 = 0.0;
         double modal_2 = 0.0;
         double energy = 0.0;
-        //double blending_function = 0.0;
-        //double blending_function_min = 0.001;
-        //double blending_function_max = 1.0;
-        //double sharpness_factor = 9.21024;
-
-        //std::vector<real> nstate;
-
-        //std::vector<dealii::types::global_dof_index> current_dofs_indices;
-        // Current reference element related to this physical cell
-        //const int i_fele = soln_cell->active_fe_index();
-        //const dealii::FESystem<dim, dim>& current_fe_ref = fe_collection[i_fele];
-        //const int poly_degree = current_fe_ref.tensor_degree();
-
-        //const unsigned int n_dofs_curr_cell = current_fe_ref.n_dofs_per_cell();
 
         // Obtain the mapping from local dof indices to global dof indices
         current_dofs_indices.resize(n_dofs_cell);
         soln_cell->get_dof_indices(current_dofs_indices);
 
         // Extract the local solution dofs in the cell from the global solution dofs
-        //std::array<std::vector<real>, nstate> soln_coeff;
         std::vector<real> soln_coeff;
 
-
-       // const unsigned int n_shape_fns = n_dofs_curr_cell / nstate;
-        //real local_min_density = 1e6;
-
-
         soln_coeff.resize(n_shape_fns);
-
-        //const unsigned int istate;
-        //const unsigned int ishape;
-
         int istate = 0;
         int ishape = 0;
         double n0 = 0.0;
         double n1 = 0.0;
 
-        //this->pcout << " nstate " << nstate <<std::endl;
-
-        //bool nan_check = false;
         // Allocate solution dofs and set local min
         for (unsigned int idof = 0; idof < n_dofs_cell; ++idof) {
             istate = fe_collection[poly_degree].system_to_component_index(idof).first;
             ishape = fe_collection[poly_degree].system_to_component_index(idof).second;
             if (istate == nstate-1){
                 soln_coeff[ishape] = solution[current_dofs_indices[idof]];
-             //   this->pcout << " soln coeff 1 " << soln_coeff[ishape] <<std::endl;
                 if (idof == n_dofs_cell - 1){
                     n0 = soln_coeff[ishape];
-            //    this->pcout << "n0 "<< n0<<std::endl;
-            }
-            if (idof == n_dofs_cell - 2){
-                n1 = soln_coeff[ishape];
-            //    this->pcout << "n1 "<< n1<<std::endl;
-            }
-            modal_1 += pow(soln_coeff[ishape], 2);
-            if (idof < n_dofs_cell -1){
-                modal_2 += pow(soln_coeff[ishape], 2);
-            }
+                }
+                if (idof == n_dofs_cell - 2){
+                    n1 = soln_coeff[ishape];
+                }
+                modal_1 += pow(soln_coeff[ishape], 2);
+                if (idof < n_dofs_cell -1){
+                    modal_2 += pow(soln_coeff[ishape], 2);
+                }
             }
         }
-       // std::abort();
-
- /*       //this->pcout << " ndofs " << n_dofs_cell <<std::endl;
-        for (unsigned int j = 0; j < n_dofs_cell; j++){
-            //this->pcout << " soln coeff 1" << soln_coeff[j] <<std::endl;
-            modal_1 += pow(soln_coeff[j], 2);
-            if (j == n_dofs_cell - 1){
-                this->pcout << "m "<< soln_coeff[j]<<std::endl;
-            }
-            if (j == n_dofs_cell - 2){
-                this->pcout << "m2 "<< soln_coeff[j]<<std::endl;
-            }
-        }
-        */
-
-       // this->pcout << " modal 1 " << modal_1 <<std::endl;
-/*
-        //this->pcout<< "m1" << pow(soln_coeff[n_dofs_cell-1], 2) <<std::endl;
-        
-        this->pcout << " sol1 " << soln_coeff[n_dofs_cell-1] <<std::endl;
-        */
+       
         modal_1 = pow(n0, 2) / modal_1;
 
-        //this->pcout << " m1 " << modal_1 <<std::endl;
-/*
-        for (unsigned int j = 0; j < n_dofs_cell-1; j++){
-            modal_2 += pow(soln_coeff[j], 2);
-        }
-        */
         modal_2 = pow(n1, 2) / modal_2;
-
-     //   this->pcout << " modal 2 " << modal_2 <<std::endl;
 
         energy = std::max(modal_1, modal_2);
 
-      //  this->pcout << " energy " << energy <<std::endl;
-
-      //  std::abort();
-
-        //threshold_value = 0.5 * pow(10, -1.8 * (pow((ishape + 1), 0.25))); 
-/*
-        if (energy > threshold_value){
-            blending_function = 1 / (1+exp(-sharpness_factor/threshold_value * (energy - threshold_value)));
-        }
-
-        if (blending_function < blending_function_min){
-            blending_function = 0.0;
-        }
-        else if (1-blending_function_min < blending_function){
-            blending_function = 1.0;
-        }
-        */
         this->modal_sensor_cell[cell_index] = energy;
-        //std::abort();
 
         // ************************* Adaptive Flux Reconstruction Steps ************************* //
 
