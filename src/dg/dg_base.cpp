@@ -2631,7 +2631,7 @@ void DGBase<dim,real,MeshType>::apply_inverse_global_mass_matrix(
         double n0 = 0.0;
         double n1 = 0.0;
 
-        // Allocate solution dofs and set local min
+        // Allocate solution dofs
         for (unsigned int idof = 0; idof < n_dofs_cell; ++idof) {
             istate = fe_collection[poly_degree].system_to_component_index(idof).first;
             ishape = fe_collection[poly_degree].system_to_component_index(idof).second;
