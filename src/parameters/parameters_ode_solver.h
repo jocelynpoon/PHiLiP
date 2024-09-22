@@ -21,6 +21,7 @@ public:
         pod_petrov_galerkin_solver, ///Proper Orthogonal Decomposition with Petrov-Galerkin projection (LSPG)
         hyper_reduced_petrov_galerkin_solver, ///Proper Orthogonal Decomposition with Petrov-Galerkin projection (LSPG) and ECSW Hyper-reduction
         PERK_solver
+        pod_galerkin_runge_kutta_solver /// Proper Orthogonal Decomposition with Galerkin projection Runge Kutta (RK) explicit
     };
 
     OutputEnum ode_output; ///< verbose or quiet.
