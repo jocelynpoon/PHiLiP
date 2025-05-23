@@ -19,7 +19,7 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_solutio
     for (int j = 0; j < istage; ++j){
         if (this->butcher_tableau->get_a(istage,j) != 0){
             this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
-        }
+        } 
     } //sum(a_ij *k_j), explicit part
 
     
@@ -156,15 +156,18 @@ template class RungeKuttaODESolver<PHILIP_DIM, double,1, dealii::Triangulation<P
 template class RungeKuttaODESolver<PHILIP_DIM, double,2, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,3, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,4, dealii::Triangulation<PHILIP_DIM> >;
+template class RungeKuttaODESolver<PHILIP_DIM, double,10, dealii::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,1, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,2, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,3, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
 template class RungeKuttaODESolver<PHILIP_DIM, double,4, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
+template class RungeKuttaODESolver<PHILIP_DIM, double,10, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
 #if PHILIP_DIM != 1
     template class RungeKuttaODESolver<PHILIP_DIM, double,1, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
     template class RungeKuttaODESolver<PHILIP_DIM, double,2, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
     template class RungeKuttaODESolver<PHILIP_DIM, double,3, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
     template class RungeKuttaODESolver<PHILIP_DIM, double,4, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
+    template class RungeKuttaODESolver<PHILIP_DIM, double,10, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
 #endif
 
 } // ODESolver namespace

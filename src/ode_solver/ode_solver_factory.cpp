@@ -189,6 +189,9 @@ std::shared_ptr<ODESolverBase<dim,real,MeshType>> ODESolverFactory<dim,real,Mesh
         else if (n_rk_stages == 4){
             return std::make_shared<RungeKuttaODESolver<dim,real,4,MeshType>>(dg_input,rk_tableau_butcher,RRK_object);
         }
+        else if (n_rk_stages == 10){
+            return std::make_shared<RungeKuttaODESolver<dim,real,10,MeshType>>(dg_input,rk_tableau_butcher,RRK_object);
+        }
         else{
             pcout << "Error: invalid number of stages. Aborting..." << std::endl;
             std::abort();
@@ -320,6 +323,7 @@ std::shared_ptr<RKTableauBase<dim,real,MeshType>> ODESolverFactory<dim,real,Mesh
     if (rk_method == RKMethodEnum::euler_im)    return std::make_shared<EulerImplicit<dim, real, MeshType>>  (n_rk_stages, "Implicit Euler (implicit)");
     if (rk_method == RKMethodEnum::dirk_2_im)   return std::make_shared<DIRK2Implicit<dim, real, MeshType>>  (n_rk_stages, "2nd order diagonally-implicit (implicit)");
     if (rk_method == RKMethodEnum::dirk_3_im)   return std::make_shared<DIRK3Implicit<dim, real, MeshType>>  (n_rk_stages, "3nd order diagonally-implicit (implicit)");
+    if (rk_method == RKMethodEnum::PERK_10_6_2)   return std::make_shared<PERK_10_6_2<dim, real, MeshType>>  (n_rk_stages, "2nd order Paired Explicit RK");
     else {
         // Return dummy RK method when running LSRK method because an RK tableau has to be created
         if (rk_method == RKMethodEnum::RK3_2_5F_3SStarPlus){

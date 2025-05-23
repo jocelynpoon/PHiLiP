@@ -199,6 +199,29 @@ protected:
     void set_c() override;
 };
 
+#if PHILIP_DIM==1
+template <int dim, typename real, typename MeshType = dealii::Triangulation<dim>>
+#else
+template <int dim, typename real, typename MeshType = dealii::parallel::distributed::Triangulation<dim>>
+#endif
+class PERK_10_6_2: public RKTableauButcherBase <dim, real, MeshType>
+{
+public:
+    /// Constructor
+    PERK_10_6_2(const int n_rk_stages, const std::string rk_method_string_input) 
+        : RKTableauButcherBase<dim,real,MeshType>(n_rk_stages, rk_method_string_input) { }
+
+protected:
+    /// Setter for butcher_tableau_a
+    void set_a() override;
+
+    /// Setter for butcher_tableau_b
+    void set_b() override;
+
+    /// Setter for butcher_tableau_c
+    void set_c() override;
+};
+
 } // ODE namespace
 } // PHiLiP namespace
 

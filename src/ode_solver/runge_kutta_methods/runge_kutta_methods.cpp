@@ -171,6 +171,38 @@ void DIRK3Implicit<dim,real,MeshType> :: set_c()
 }
 
 //##################################################################
+
+template <int dim, typename real, typename MeshType>
+void PERK_10_6_2<dim,real,MeshType> :: set_a()
+{
+    const double butcher_tableau_a_values[100] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                  0.05555555555555555, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                  0.1111111111111111, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                  0.1666666666666667, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                  0.2222222222222222, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                  0.2777777777777778, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                  0.2753855669141815, 0.0, 0.0, 0.0, 0.0, 0.05794776641915183, 0.0, 0.0, 0.0, 0.0,
+                                                  0.2624172478767012, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1264716410121877, 0.0, 0.0, 0.0,
+                                                  0.2288001625437463, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2156442819006982, 0.0, 0.0,
+                                                  0.1533674922301650, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3466325077698350, 0.0};
+    this->butcher_tableau_a.fill(butcher_tableau_a_values);
+}
+
+template <int dim, typename real, typename MeshType>
+void PERK_10_6_2<dim,real,MeshType> :: set_b()
+{
+    const double butcher_tableau_b_values[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    this->butcher_tableau_b.fill(butcher_tableau_b_values);
+}
+
+template <int dim, typename real, typename MeshType>
+void PERK_10_6_2<dim,real,MeshType> :: set_c()
+{
+    const double butcher_tableau_c_values[10] = {0, 1/18, 1/9, 1/6, 2/9, 5/18, 1/3, 7/18, 4/9, 1/2};
+    this->butcher_tableau_c.fill(butcher_tableau_c_values);
+}
+
+//##################################################################
 template class SSPRK3Explicit<PHILIP_DIM, double, dealii::Triangulation<PHILIP_DIM> >;
 template class SSPRK3Explicit<PHILIP_DIM, double, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
 #if PHILIP_DIM != 1
@@ -211,6 +243,12 @@ template class DIRK3Implicit<PHILIP_DIM, double, dealii::Triangulation<PHILIP_DI
 template class DIRK3Implicit<PHILIP_DIM, double, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
 #if PHILIP_DIM != 1
     template class DIRK3Implicit<PHILIP_DIM, double, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
+#endif
+
+template class PERK_10_6_2<PHILIP_DIM, double, dealii::Triangulation<PHILIP_DIM> >;
+template class PERK_10_6_2<PHILIP_DIM, double, dealii::parallel::shared::Triangulation<PHILIP_DIM> >;
+#if PHILIP_DIM != 1
+    template class PERK_10_6_2<PHILIP_DIM, double, dealii::parallel::distributed::Triangulation<PHILIP_DIM> >;
 #endif
 
 } // ODESolver namespace
