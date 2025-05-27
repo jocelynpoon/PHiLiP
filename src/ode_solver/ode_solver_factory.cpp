@@ -324,6 +324,7 @@ std::shared_ptr<RKTableauBase<dim,real,MeshType>> ODESolverFactory<dim,real,Mesh
     if (rk_method == RKMethodEnum::dirk_2_im)   return std::make_shared<DIRK2Implicit<dim, real, MeshType>>  (n_rk_stages, "2nd order diagonally-implicit (implicit)");
     if (rk_method == RKMethodEnum::dirk_3_im)   return std::make_shared<DIRK3Implicit<dim, real, MeshType>>  (n_rk_stages, "3nd order diagonally-implicit (implicit)");
     if (rk_method == RKMethodEnum::PERK_10_6_2)   return std::make_shared<PERK_10_6_2<dim, real, MeshType>>  (n_rk_stages, "2nd order Paired Explicit RK");
+    if (rk_method == RKMethodEnum::PERK_10_7_2)   return std::make_shared<PERK_10_6_2<dim, real, MeshType>>  (n_rk_stages, "2nd order Paired Explicit RK");
     else {
         // Return dummy RK method when running LSRK method because an RK tableau has to be created
         if (rk_method == RKMethodEnum::RK3_2_5F_3SStarPlus){

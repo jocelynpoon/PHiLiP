@@ -111,6 +111,7 @@ void ODESolverParam::declare_parameters (dealii::ParameterHandler &prm)
                           " dirk_2_im | "
                           " dirk_3_im | "
                           " PERK_10_6_2 | "
+                          " PERK_10_7_2 | "
                           " RK3_2_5F_3SStarPlus | "
                           " RK4_3_5_3SStar | "
                           " RK4_3_9F_3SStarPlus |"
@@ -125,6 +126,7 @@ void ODESolverParam::declare_parameters (dealii::ParameterHandler &prm)
                           " dirk_2_im | "
                           " dirk_3_im | "
                           " PERK_10_6_2 | "
+                          " PERK_10_7_2 | "
                           " RK4_3_5_3SStar | "
                           " RK3_2_5F_3SStarPlus | "
                           " RK5_4_10F_3SStarPlus |"
@@ -263,6 +265,11 @@ void ODESolverParam::parse_parameters (dealii::ParameterHandler &prm)
         }
         else if (rk_method_string == "PERK_10_6_2"){
             runge_kutta_method = RKMethodEnum::PERK_10_6_2;
+            n_rk_stages  = 10;
+            rk_order = 2;
+        }
+        else if (rk_method_string == "PERK_10_7_2"){
+            runge_kutta_method = RKMethodEnum::PERK_10_7_2;
             n_rk_stages  = 10;
             rk_order = 2;
         }

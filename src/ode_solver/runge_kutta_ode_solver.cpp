@@ -15,14 +15,65 @@ template<int dim, typename real, int n_rk_stages, typename MeshType>
 void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_solution (int istage, real dt, const bool pseudotime)
 {
     this->rk_stage[istage]=0.0; //resets all entries to zero
-    
-    for (int j = 0; j < istage; ++j){
-        if (this->butcher_tableau->get_a(istage,j) != 0){
-            this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
-        } 
-    } //sum(a_ij *k_j), explicit part
+    //bool calcStage = false;
 
-    
+    std::vector<bool> stageCalc;
+
+    for (int j = 0; j < n_rk_stages; ++j) {
+        bool rowHasTrue = false;
+        for (int i = 0; i < n_rk_stages; ++i) {
+            if (this->butcher_tableau->get_a(i, j) != 0 || this->butcher_tableau->get_b(j) != 0) {
+                rowHasTrue = true;
+                break;
+            }
+        }
+        stageCalc.push_back(rowHasTrue);
+    }
+
+/*
+    std::cout << "stageCalc: ";
+    for (bool val : stageCalc) {
+        std::cout << (val ? "true" : "false") << " ";
+    }
+    std::cout << std::endl;
+*/
+/*
+    for (int j = 0; j < n_rk_stages; ++j){
+        if (this->butcher_tableau->get_a(j,istage) != 0 || this->butcher_tableau->get_b(j) != 0){
+            calcStage = true;
+            break;
+        }
+    }
+*/
+   // std::cout << calcStage << std::endl;
+ /*   for (size_t i = 0; i < stageCalc.size(); ++i) {
+        if (stageCalc[i] == true) {
+            for (int j = 0; j < istage; ++j){
+                if (this->butcher_tableau->get_a(istage,j) != 0){
+                    this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
+                }
+            }
+        }   
+    }
+        */
+    if (stageCalc[istage] == true) {
+        //std::cout << istage << std::endl;
+        for (int j = 0; j < istage; ++j){
+            if (this->butcher_tableau->get_a(istage,j) != 0){
+                this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
+            }//sum(a_ij *k_j), explicit part
+        }
+    }   
+    //abort();
+    /*
+    if (calcStage == true){
+        for (int j = 0; j < istage; ++j){
+            if (this->butcher_tableau->get_a(istage,j) != 0){
+                this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
+            } 
+        } //sum(a_ij *k_j), explicit part
+    }
+    */
     if(pseudotime) {
         const double CFL = dt;
         this->dg->time_scale_solution_update(this->rk_stage[istage], CFL);
@@ -31,7 +82,9 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_solutio
     }//dt * sum(a_ij * k_j)
     
     this->rk_stage[istage].add(1.0,this->solution_update); //u_n + dt * sum(a_ij * k_j)
-    
+
+
+  
     //implicit solve if there is a nonzero diagonal element
     if (!this->butcher_tableau_aii_is_zero[istage]){
         /* // AD version - keeping in comments as it may be useful for future testing
@@ -93,7 +146,9 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::sum_stages (real dt, co
             this->dg->time_scale_solution_update(this->rk_stage[istage], CFL);
             this->solution_update.add(1.0, this->rk_stage[istage]);
         } else {
-            this->solution_update.add(dt* this->butcher_tableau->get_b(istage),this->rk_stage[istage]);
+            if (this->butcher_tableau->get_b(istage) != 0){
+                this->solution_update.add(dt* this->butcher_tableau->get_b(istage),this->rk_stage[istage]);
+            }
         }
     }
 }
@@ -140,6 +195,8 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_runge_kutta_sy
         if (this->butcher_tableau->get_a(istage,istage)==0.0)     this->butcher_tableau_aii_is_zero[istage] = true;
     
     }
+
+
     if(this->all_parameters->use_inverse_mass_on_the_fly == false) {
         this->pcout << " evaluating inverse mass matrix..." << std::flush;
         this->dg->evaluate_mass_matrices(true); // creates and stores global inverse mass matrix

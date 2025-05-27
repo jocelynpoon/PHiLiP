@@ -71,6 +71,7 @@ public:
         dirk_2_im, ///Second-order diagonally-implicit RK
         dirk_3_im, ///Third-order diagonally-implicit RK
         PERK_10_6_2,
+        PERK_10_7_2,
         RK4_3_5_3SStar, ///Fourth-order, three register low-storage Runge-Kutta method
         RK3_2_5F_3SStarPlus, ///Third-order, FSAL, three register low-storage Runge-Kutta method with a fourth register for an error estimate
         RK4_3_9F_3SStarPlus, ///Fourth-order, FSAL, three register low-storage Runge-Kutta method with a fourth register for an error estimate
