@@ -15,48 +15,8 @@ template<int dim, typename real, int n_rk_stages, typename MeshType>
 void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_solution (int istage, real dt, const bool pseudotime)
 {
     this->rk_stage[istage]=0.0; //resets all entries to zero
-    //bool calcStage = false;
 
-    std::vector<bool> stageCalc;
-
-    for (int j = 0; j < n_rk_stages; ++j) {
-        bool rowHasTrue = false;
-        for (int i = 0; i < n_rk_stages; ++i) {
-            if (this->butcher_tableau->get_a(i, j) != 0 || this->butcher_tableau->get_b(j) != 0) {
-                rowHasTrue = true;
-                break;
-            }
-        }
-        stageCalc.push_back(rowHasTrue);
-    }
-
-/*
-    std::cout << "stageCalc: ";
-    for (bool val : stageCalc) {
-        std::cout << (val ? "true" : "false") << " ";
-    }
-    std::cout << std::endl;
-*/
-/*
-    for (int j = 0; j < n_rk_stages; ++j){
-        if (this->butcher_tableau->get_a(j,istage) != 0 || this->butcher_tableau->get_b(j) != 0){
-            calcStage = true;
-            break;
-        }
-    }
-*/
-   // std::cout << calcStage << std::endl;
- /*   for (size_t i = 0; i < stageCalc.size(); ++i) {
-        if (stageCalc[i] == true) {
-            for (int j = 0; j < istage; ++j){
-                if (this->butcher_tableau->get_a(istage,j) != 0){
-                    this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
-                }
-            }
-        }   
-    }
-        */
-    if (stageCalc[istage] == true) {
+    if (this->calc_stage[istage] == true) {
         //std::cout << istage << std::endl;
         for (int j = 0; j < istage; ++j){
             if (this->butcher_tableau->get_a(istage,j) != 0){
@@ -64,16 +24,7 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_solutio
             }//sum(a_ij *k_j), explicit part
         }
     }   
-    //abort();
-    /*
-    if (calcStage == true){
-        for (int j = 0; j < istage; ++j){
-            if (this->butcher_tableau->get_a(istage,j) != 0){
-                this->rk_stage[istage].add(this->butcher_tableau->get_a(istage,j), this->rk_stage[j]);
-            } 
-        } //sum(a_ij *k_j), explicit part
-    }
-    */
+    
     if(pseudotime) {
         const double CFL = dt;
         this->dg->time_scale_solution_update(this->rk_stage[istage], CFL);
@@ -194,6 +145,18 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_runge_kutta_sy
     for (int istage=0; istage<n_rk_stages; ++istage) {
         if (this->butcher_tableau->get_a(istage,istage)==0.0)     this->butcher_tableau_aii_is_zero[istage] = true;
     
+    }
+
+
+    for (int j = 0; j < n_rk_stages; ++j) {
+        bool rowHasTrue = false;
+        for (int i = 0; i < n_rk_stages; ++i) {
+            if (this->butcher_tableau->get_a(i, j) != 0 || this->butcher_tableau->get_b(j) != 0) {
+                rowHasTrue = true;
+                break;
+            }
+        }
+        this->calc_stage.push_back(rowHasTrue);
     }
 
 

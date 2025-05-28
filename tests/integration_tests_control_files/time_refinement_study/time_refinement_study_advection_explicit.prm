@@ -14,7 +14,7 @@ subsection ODE solver
   set ode_solver_type = runge_kutta
   set output_solution_every_dt_time_intervals = 0.1
   set initial_time_step = 2.5E-3
-  set runge_kutta_method = PERK_10_7_2
+  set runge_kutta_method = PERK_10_6_2
 end
 
 subsection manufactured solution convergence study 

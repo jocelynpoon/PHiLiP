@@ -66,6 +66,9 @@ protected:
     
     /// Indicator for zero diagonal elements; used to toggle implicit solve.
     std::vector<bool> butcher_tableau_aii_is_zero;
+
+    /// Indicator whether to calculate stage in PERK.
+    std::vector<bool> calc_stage;
 };
 } // ODE namespace
 } // PHiLiP namespace
