@@ -76,6 +76,21 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_derivat
 {
      //set the DG current time for unsteady source terms
     this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(istage)*dt);
+
+
+    dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
+    locations_to_evaluate_rhs.reinit(this->dg->triangulation->n_active_cells());
+    const int evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ;
+    std::cout << evaluate_until_this_index << " " << locations_to_evaluate_rhs.size() << std::endl;
+    for (int i = 0; i < evaluate_until_this_index; ++i){
+        // Assign only on locally owned indices.
+        if (locations_to_evaluate_rhs.in_local_range(i))      locations_to_evaluate_rhs(i) = 1;
+    }
+    locations_to_evaluate_rhs.update_ghost_values();
+    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 10); 
+    std::cout << "Assigned group ID." << std::endl;
+    this->dg->assemble_residual(false, false, false, 0.0, 10);   
+    
     
     //solve the system's right hand side
     this->dg->assemble_residual(); //RHS : du/dt = RHS = F(u_n + dt* sum(a_ij*k_j) + dt * a_ii * u^(istage)))
