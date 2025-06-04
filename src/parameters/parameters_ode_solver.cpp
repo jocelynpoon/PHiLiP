@@ -131,6 +131,21 @@ void ODESolverParam::declare_parameters (dealii::ParameterHandler &prm)
                           " RK3_2_5F_3SStarPlus | "
                           " RK5_4_10F_3SStarPlus |"
                           " RK4_3_9F_3SStarPlus >.");
+
+        prm.declare_entry("runge_kutta_method_2", "PERK_10_6_2",
+                          dealii::Patterns::Selection(
+                          " PERK_10_6_2 | "
+                          " PERK_10_7_2 "));
+        prm.enter_subsection("P_ERK");
+        {
+            prm.declare_entry("perk_solve", "false",
+                          dealii::Patterns::Bool(),
+                          "Choose use of P-ERK Scheme.");
+            prm.declare_entry("num_rk_stages", "10",
+                          dealii::Patterns::Integer(),
+                          "Number of Stages");
+        }
+        prm.leave_subsection();
         prm.enter_subsection("rrk root solver");
         {
             prm.declare_entry("rrk_root_solver_output", "quiet",
@@ -301,6 +316,21 @@ void ODESolverParam::parse_parameters (dealii::ParameterHandler &prm)
             rk_order = 5;
             is_3Sstarplus = true;
         }
+
+        prm.enter_subsection("P_ERK");
+        {
+            perk_solve = prm.get_bool("perk_solve");
+            if (perk_solve == true ){
+                const std::string perk_stages = prm.get("num_rk_stages");
+                if (perk_stages == "10"){
+                    runge_kutta_method = RKMethodEnum::PERK_10_7_2;
+                    runge_kutta_method_2 = RKMethodEnum::PERK_10_7_2;
+                    n_rk_stages  = 10;
+                    rk_order = 2;
+                }     
+            } 
+        }
+        prm.leave_subsection();
 
         prm.enter_subsection("rrk root solver");
         {

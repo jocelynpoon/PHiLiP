@@ -27,6 +27,9 @@ public:
     /// Returns Butcher tableau "a" coefficient at position [i][j]
     double get_a(const int i, const int j) const;
 
+    /// Returns Butcher tableau "a" coefficient at position [i][j]
+    double get_a2(const int i, const int j) const;
+
     /// Returns Butcher tableau "c" coefficient at position [i]
     double get_c(const int i) const;
 
@@ -37,6 +40,9 @@ protected:
 
     /// Butcher tableau "a"
     dealii::Table<2,double> butcher_tableau_a;
+
+    /// Butcher tableau "a"
+    dealii::Table<2,double> butcher_tableau_a2;
 
     /// Butcher tableau "c"
     dealii::Table<1,double> butcher_tableau_c;

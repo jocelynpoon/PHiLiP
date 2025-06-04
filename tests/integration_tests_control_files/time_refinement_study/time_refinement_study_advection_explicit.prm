@@ -15,7 +15,13 @@ subsection ODE solver
   set output_solution_every_dt_time_intervals = 0.1
   set initial_time_step = 2.5E-3
   set runge_kutta_method = PERK_10_6_2
+  set runge_kutta_method_2 = PERK_10_7_2
+  subsection P_ERK
+  	set perk_solve = true
+  	set num_rk_stages = 10
+  end
 end
+
 
 subsection manufactured solution convergence study 
   # advection speed 

@@ -10,6 +10,7 @@ RKTableauButcherBase<dim,real, MeshType> :: RKTableauButcherBase (const int n_rk
     : RKTableauBase<dim,real,MeshType>(n_rk_stages_input,rk_method_string_input)
 {
     this->butcher_tableau_a.reinit(this->n_rk_stages,this->n_rk_stages);
+    this->butcher_tableau_a2.reinit(this->n_rk_stages,this->n_rk_stages);
     this->butcher_tableau_b.reinit(this->n_rk_stages);
     this->butcher_tableau_c.reinit(this->n_rk_stages);
 }
@@ -27,6 +28,12 @@ template <int dim, typename real, typename MeshType>
 double RKTableauButcherBase<dim,real, MeshType> :: get_a (const int i, const int j) const
 {
     return butcher_tableau_a[i][j];
+}
+
+template <int dim, typename real, typename MeshType> 
+double RKTableauButcherBase<dim,real, MeshType> :: get_a2 (const int i, const int j) const
+{
+    return butcher_tableau_a2[i][j];
 }
 
 template <int dim, typename real, typename MeshType> 

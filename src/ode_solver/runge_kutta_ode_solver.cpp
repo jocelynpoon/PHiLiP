@@ -81,24 +81,42 @@ void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::calculate_stage_derivat
     dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
     locations_to_evaluate_rhs.reinit(this->dg->triangulation->n_active_cells());
     const int evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ;
-    std::cout << evaluate_until_this_index << " " << locations_to_evaluate_rhs.size() << std::endl;
+    //std::cout << evaluate_until_this_index << " " << locations_to_evaluate_rhs.size() << std::endl;
     for (int i = 0; i < evaluate_until_this_index; ++i){
         // Assign only on locally owned indices.
         if (locations_to_evaluate_rhs.in_local_range(i))      locations_to_evaluate_rhs(i) = 1;
     }
+    //this->all_parameters->ode_solver_param.runge_kutta_method = PHiLiP::Parameters::ODESolverParam::PERK_10_6_2;
     locations_to_evaluate_rhs.update_ghost_values();
     this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 10); 
-    std::cout << "Assigned group ID." << std::endl;
+    //std::cout << "Assigned group ID." << std::endl;
+    this->dg->right_hand_side*=0;
     this->dg->assemble_residual(false, false, false, 0.0, 10);   
+
     
     
     //solve the system's right hand side
-    this->dg->assemble_residual(); //RHS : du/dt = RHS = F(u_n + dt* sum(a_ij*k_j) + dt * a_ii * u^(istage)))
+    //this->dg->assemble_residual(); //RHS : du/dt = RHS = F(u_n + dt* sum(a_ij*k_j) + dt * a_ii * u^(istage)))
 
     if(this->all_parameters->use_inverse_mass_on_the_fly){
         this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, this->rk_stage[istage]); //rk_stage[istage] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
     } else{
         this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[istage], this->dg->right_hand_side); //rk_stage[istage] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
+    }
+    const int second_half = locations_to_evaluate_rhs.size();
+    for (int i = evaluate_until_this_index; i < second_half; ++i){
+        // Assign only on locally owned indices.
+        locations_to_evaluate_rhs(i) = 1;
+    }
+    //this->all_parameters->ode_solver_param.runge_kutta_method = PHiLiP::Parameters::ODESolverParam::PERK_10_7_2;
+    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 0);
+    this->dg->right_hand_side*=0; 
+    this->dg->assemble_residual(false, false, false, 0.0, 0);
+
+    if(this->all_parameters->use_inverse_mass_on_the_fly){
+        this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, this->rk_stage[istage]);
+    } else{
+        this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[istage], this->dg->right_hand_side);
     }
 }
 
@@ -150,8 +168,12 @@ real RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::adjust_time_step (real 
 template <int dim, typename real, int n_rk_stages, typename MeshType> 
 void RungeKuttaODESolver<dim,real,n_rk_stages,MeshType>::allocate_runge_kutta_system ()
 {
-
     this->butcher_tableau->set_tableau();
+
+    //butcher_tableau_2 = std::make_shared<PERK_10_6_2>(n_rk_stages, "PERK_10_6_2");
+    //butcher_tableau_2 = std::make_shared<PERK_10_6_2<dim, real, MeshType>>  (n_rk_stages, "PERK_10_6_2");
+
+
     
     this->butcher_tableau_aii_is_zero.resize(n_rk_stages);
     std::fill(this->butcher_tableau_aii_is_zero.begin(),

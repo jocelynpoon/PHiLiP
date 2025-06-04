@@ -38,6 +38,9 @@ public:
 protected:
     /// Stores Butcher tableau a and b, which specify the RK method
     std::shared_ptr<RKTableauButcherBase<dim,real,MeshType>> butcher_tableau;
+
+    std::shared_ptr<RKTableauButcherBase<dim,real,MeshType>> butcher_tableau_2;
+
 };
 
 } // ODE namespace

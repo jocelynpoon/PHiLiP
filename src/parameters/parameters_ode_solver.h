@@ -48,7 +48,7 @@ public:
     double initial_time_step; ///< Time step used in ODE solver.
     double time_step_factor_residual; ///< Multiplies initial time-step by time_step_factor_residual*(-log10(residual_norm_decrease))
     double time_step_factor_residual_exp; ///< Scales initial time step by pow(time_step_factor_residual*(-log10(residual_norm_decrease)),time_step_factor_residual_exp)
-
+    bool perk_solve;
     /** Set as false by default. 
       * If true, writes the linear solver convergence data for
       *  steady state to a file named "ode_solver_steady_state_convergence_data_table.txt"
@@ -79,6 +79,8 @@ public:
     };
 
     RKMethodEnum runge_kutta_method; ///< Runge-kutta method.
+
+    RKMethodEnum runge_kutta_method_2;
     int n_rk_stages; ///< Number of stages for an RK method; assigned based on runge_kutta_method
     int rk_order; ///< Order of the RK method; assigned based on runge_kutta_method
     int num_delta; ///< Number of delta values in low-storage RK methods

@@ -215,7 +215,8 @@ void PERK_10_7_2<dim,real,MeshType> :: set_a()
                                                   0.2361284000098332, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1527604888790557, 0.0, 0.0, 0.0,
                                                   0.2114166292436466, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2330278152007978, 0.0, 0.0,
                                                   0.1467310489115189, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3532689510884811, 0.0};
-    this->butcher_tableau_a.fill(butcher_tableau_a_values);
+    this->butcher_tableau_a2.fill(butcher_tableau_a_values);
+    //this->butcher_tableau_a.fill(butcher_tableau_a_values);
 }
 
 template <int dim, typename real, typename MeshType>

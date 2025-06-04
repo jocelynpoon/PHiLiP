@@ -51,8 +51,15 @@ public:
     static std::shared_ptr<ODESolverBase<dim,real,MeshType>> create_RungeKuttaODESolver(std::shared_ptr< DGBase<dim, real, MeshType> > dg_input, std::shared_ptr<ProperOrthogonalDecomposition::PODBase<dim>> pod);
     
     /// Creates an RKTableau object based on the specified RK method
-    static std::shared_ptr<RKTableauBase<dim,real,MeshType>> create_RKTableau(std::shared_ptr< DGBase<dim,real,MeshType> > dg_input);
-    
+   // static std::shared_ptr<RKTableauBase<dim,real,MeshType>> create_RKTableau(std::shared_ptr< DGBase<dim,real,MeshType> > dg_input);
+
+    /// Creates an RKTableau object based on the specified RK method
+    //static std::shared_ptr<RKTableauBase<dim,real,MeshType>> create_RKTableau2(std::shared_ptr< DGBase<dim,real,MeshType> > dg_input);
+    static std::pair<
+        std::shared_ptr<RKTableauBase<dim, real, MeshType>>,
+        std::shared_ptr<RKTableauBase<dim, real, MeshType>>
+    > create_RKTableau2(std::shared_ptr<DGBase<dim, real, MeshType>> dg_input);
+
     /// Creates an RKTableau object based on the specified RK method
     static std::shared_ptr<LowStorageRKTableauBase<dim,real,MeshType>> create_LowStorageRKTableau(std::shared_ptr< DGBase<dim,real,MeshType> > dg_input);
      
