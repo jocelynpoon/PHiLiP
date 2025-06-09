@@ -166,6 +166,18 @@ void ODESolverParam::declare_parameters (dealii::ParameterHandler &prm)
                           "Beta controller 3 for automatic step size controller");
         }
         prm.leave_subsection();
+/*
+        prm.enter_subsection("PERK");
+        {
+            prm.declare_entry("PERK_1", "PERK_10_6_2",
+                              dealii::Patterns::Selection("PERK_10_6_2|PERK_10_7_2"),
+                              "PERK scheme");
+            prm.declare_entry("PERK_2", "PERK_10_7_2",
+                              dealii::Patterns::Selection("PERK_10_6_2|PERK_10_7_2"),
+                              "PERK scheme")
+        }
+        prm.leave_subsection();
+        */
     }
     prm.leave_subsection();
 }
