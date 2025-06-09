@@ -19,12 +19,24 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
     this->original_time_step = dt;
     this->solution_update = this->dg->solution; //storing u_n
 
+    /*
+    dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
+    locations_to_evaluate_rhs.reinit(this->dg->triangulation->n_active_cells());
+    const int evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ; */
+
     //calculating stages **Note that rk_stage[i] stores the RHS at a partial time-step (not solution u)
     for (int i = 0; i < n_rk_stages; ++i){
 
         this->rk_stage[i]=0.0; //resets all entries to zero
         if (this->calc_stage[i] == true) {
             for (int j = 0; j < i; ++j){
+                // add condition for left
+                /*
+                if (this->butcher_tableau->get_a1(i,j) != 0){
+                    this->rk_stage[i].add(this->butcher_tableau->get_a1(i,j), this->rk_stage[j]);
+                }
+                    */
+                // add condition for right
                 if (this->butcher_tableau->get_a2(i,j) != 0){
                     this->rk_stage[i].add(this->butcher_tableau->get_a2(i,j), this->rk_stage[j]);
                 }
@@ -88,9 +100,11 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
         //set the DG current time for unsteady source terms
         this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(i)*dt);
 
+        // add condition left domain
+
         dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
         locations_to_evaluate_rhs.reinit(this->dg->triangulation->n_active_cells());
-        const int evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ;
+        const int evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ; 
         //std::cout << evaluate_until_this_index << " " << locations_to_evaluate_rhs.size() << std::endl;
 
         for (int i = 0; i < evaluate_until_this_index; ++i){
@@ -102,7 +116,11 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
         this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 10); 
         //std::cout << "Assigned group ID." << std::endl;
         //solve the system's right hande side
-        //this->dg->assemble_residual(); //RHS : du/dt = RHS = F(u_n + dt* sum(a_ij*k_j) + dt * a_ii * u^(i)))
+        
+        if (this->calc_stage[i] == true) {
+            this->dg->assemble_residual(); //RHS : du/dt = RHS = F(u_n + dt* sum(a_ij*k_j) + dt * a_ii * u^(i)))
+        }
+        
         this->dg->right_hand_side*=0;
 
         this->dg->assemble_residual(false, false, false, 0.0, 10);   
@@ -113,13 +131,15 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
             this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[i], this->dg->right_hand_side); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
         }
 
+        // add condition right domain
+
         const int second_half = locations_to_evaluate_rhs.size();
 
         for (int i = evaluate_until_this_index; i < second_half; ++i){
             // Assign only on locally owned indices.
             locations_to_evaluate_rhs(i) = 1;
         }
-        
+
         this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 0);
         this->dg->right_hand_side*=0; 
         this->dg->assemble_residual(false, false, false, 0.0, 0);
