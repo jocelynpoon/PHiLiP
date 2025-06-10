@@ -27,8 +27,8 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
         if (this->calc_stage_a2[i] == true){
             this->rk_stage[i]=0.0;
             for (int j = 0; j < i; ++j){
-                if (this->butcher_tableau->get_a2(i,j) != 0){
-                    this->rk_stage[i].add(this->butcher_tableau->get_a2(i,j), this->rk_stage[j]);
+                if (this->butcher_tableau->get_a(i,j,2) != 0){
+                    this->rk_stage[i].add(this->butcher_tableau->get_a(i,j,2), this->rk_stage[j]);
                 }
             } //sum(a_ij *k_j), explicit part
             if(pseudotime) {
@@ -83,8 +83,8 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
         if (this->calc_stage_a1[i] == true){
             this->rk_stage[i]=0.0;
             for (int j = 0; j < i; ++j){
-                if (this->butcher_tableau->get_a1(i,j) != 0){
-                    this->rk_stage[i].add(this->butcher_tableau->get_a1(i,j), this->rk_stage[j]);
+                if (this->butcher_tableau->get_a(i,j,1) != 0){
+                    this->rk_stage[i].add(this->butcher_tableau->get_a(i,j,1), this->rk_stage[j]);
                 }
             } //sum(a_ij *k_j), explicit part
             if(pseudotime) {
@@ -135,7 +135,6 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
             }
         }
     }
-
     // Calculates relaxation parameter and modify the time step size as dt*=relaxation_parameter.
     // if not using RRK, the relaxation parameter will be set to 1, such that dt is not modified.
     this->relaxation_parameter_RRK_solver = relaxation_runge_kutta->update_relaxation_parameter(dt, this->dg, this->rk_stage, this->solution_update);
@@ -174,6 +173,8 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
 
 }
 
+
+
 template <int dim, typename real, int n_rk_stages, typename MeshType> 
 void PERKODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
 {
@@ -202,7 +203,7 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
     for (int j = 0; j < n_rk_stages; ++j) {
         bool rowHasTrue = false;
         for (int i = 0; i < n_rk_stages; ++i) {
-            if (this->butcher_tableau->get_a2(i, j) != 0 || this->butcher_tableau->get_b(j) != 0) {
+            if (this->butcher_tableau->get_a(i, j,2) != 0 || this->butcher_tableau->get_b(j) != 0) {
                 rowHasTrue = true;
                 break;
             }
@@ -213,7 +214,7 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
     for (int j = 0; j < n_rk_stages; ++j) {
         bool rowHasTrue = false;
         for (int i = 0; i < n_rk_stages; ++i) {
-            if (this->butcher_tableau->get_a1(i, j) != 0 || this->butcher_tableau->get_b(j) != 0) {
+            if (this->butcher_tableau->get_a(i, j, 1) != 0 || this->butcher_tableau->get_b(j) != 0) {
                 rowHasTrue = true;
                 break;
             }

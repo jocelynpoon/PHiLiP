@@ -28,15 +28,13 @@ void PERKTableauBase<dim,real, MeshType> :: set_tableau ()
 }
 
 template <int dim, typename real, typename MeshType> 
-double PERKTableauBase<dim,real, MeshType> :: get_a1 (const int i, const int j) const
+double PERKTableauBase<dim,real, MeshType> :: get_a (const int i, const int j, const int a) const
 {
-    return butcher_tableau_a1[i][j];
-}
-
-template <int dim, typename real, typename MeshType> 
-double PERKTableauBase<dim,real, MeshType> :: get_a2 (const int i, const int j) const
-{
-    return butcher_tableau_a2[i][j];
+    if (a == 1){
+        return butcher_tableau_a1[i][j];
+    } else {
+        return butcher_tableau_a2[i][j];
+    }
 }
 
 template <int dim, typename real, typename MeshType> 

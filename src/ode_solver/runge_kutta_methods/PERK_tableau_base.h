@@ -26,10 +26,7 @@ public:
     virtual ~PERKTableauBase() = default;
 
     /// Returns Butcher tableau "a" coefficient at position [i][j]
-    double get_a1(const int i, const int j) const;
-
-    /// Returns Butcher tableau "a" coefficient at position [i][j]
-    double get_a2(const int i, const int j) const;
+    double get_a(const int i, const int j, const int a) const;
 
     /// Returns Butcher tableau "b" coefficient at position [i]
     double get_b(const int i) const;

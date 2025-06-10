@@ -56,8 +56,10 @@ protected:
     std::vector<bool> calc_stage_a2;
         
     dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
+    dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs2;
     int evaluate_until_this_index;
     int second_half = locations_to_evaluate_rhs.size();
+    std::vector<int> group_ID = {0, 10};
 
 
 };
