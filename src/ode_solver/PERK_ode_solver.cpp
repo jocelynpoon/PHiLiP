@@ -59,17 +59,6 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
             //set the DG current time for unsteady source terms
             this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(i)*dt);
 
-            for (int i = 0; i < evaluate_until_this_index; ++i){
-                if (locations_to_evaluate_rhs.in_local_range(i))      locations_to_evaluate_rhs(i) = 1;
-            }
-            locations_to_evaluate_rhs.update_ghost_values();
-
-            this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 10); 
-            //std::cout << "Assigned group ID." << std::endl;
-            //solve the system's right hande side 
-        
-            this->dg->right_hand_side*=0;
-
             this->dg->assemble_residual(false, false, false, 0.0, 10);   
 
             if(this->all_parameters->use_inverse_mass_on_the_fly){
@@ -117,14 +106,6 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
 
          //   const int second_half = locations_to_evaluate_rhs.size();
 
-            for (int i = evaluate_until_this_index; i < second_half; ++i){
-                // Assign only on locally owned indices.
-                locations_to_evaluate_rhs(i) = 1;
-            }
-
-            locations_to_evaluate_rhs.update_ghost_values();
-            this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 0);
-            this->dg->right_hand_side*=0; 
 
             this->dg->assemble_residual(false, false, false, 0.0, 0);   
 
@@ -224,6 +205,27 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
    // dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
     locations_to_evaluate_rhs.reinit(this->dg->triangulation->n_active_cells());
     evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ; 
+    
+    for (int i = 0; i < evaluate_until_this_index; ++i){
+        if (locations_to_evaluate_rhs.in_local_range(i))      locations_to_evaluate_rhs(i) = 1;
+    }
+    locations_to_evaluate_rhs.update_ghost_values();
+
+    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 10); 
+    //std::cout << "Assigned group ID." << std::endl;
+    //solve the system's right hande side 
+
+    this->dg->right_hand_side*=0;
+
+    for (int i = evaluate_until_this_index; i < second_half; ++i){
+        // Assign only on locally owned indices.
+        locations_to_evaluate_rhs(i) = 1;
+    }
+
+    locations_to_evaluate_rhs.update_ghost_values();
+    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 0);
+    this->dg->right_hand_side*=0; 
+
 }
 
 template class PERKODESolver<PHILIP_DIM, double,10, dealii::Triangulation<PHILIP_DIM> >;
