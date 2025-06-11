@@ -50,16 +50,18 @@ protected:
     std::vector<bool> butcher_tableau_aii_is_zero;
 
     /// Indicator whether to calculate stage in PERK.
-    std::vector<bool> calc_stage_a1;
+    //std::vector<bool> calc_stage_a1;
 
     /// Indicator whether to calculate stage in PERK.
-    std::vector<bool> calc_stage_a2;
+    //std::vector<bool> calc_stage_a2;
+
+    std::vector<std::vector<bool>> calc_stage;
+
         
     dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
-    dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs2;
     int evaluate_until_this_index;
-    int second_half = locations_to_evaluate_rhs.size();
-    std::vector<int> group_ID = {0, 10};
+    int second_half;
+    std::vector<int> group_ID = {1, 2};
 
 
 };

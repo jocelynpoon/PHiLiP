@@ -20,56 +20,11 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
     this->solution_update = this->dg->solution; //storing u_n
 
     //calculating stages **Note that rk_stage[i] stores the RHS at a partial time-step (not solution u)
-
+    //for (std::size_t k = 0; k < group_ID.size(); ++k){
     for (int i = 0; i < n_rk_stages; ++i){
-
         // first half
-        if (this->calc_stage_a2[i] == true){
-            this->rk_stage[i]=0.0;
-            for (int j = 0; j < i; ++j){
-                if (this->butcher_tableau->get_a(i,j,2) != 0){
-                    this->rk_stage[i].add(this->butcher_tableau->get_a(i,j,2), this->rk_stage[j]);
-                }
-            } //sum(a_ij *k_j), explicit part
-            if(pseudotime) {
-                const double CFL = dt;
-                this->dg->time_scale_solution_update(rk_stage[i], CFL);
-            }else {
-                this->rk_stage[i]*=dt; 
-            }//dt * sum(a_ij * k_j)
-        
-            this->rk_stage[i].add(1.0,this->solution_update); //u_n + dt * sum(a_ij * k_j)
-
-            relaxation_runge_kutta->store_stage_solutions(i, rk_stage[i]);
-
-            this->dg->solution = this->rk_stage[i];
-
-            // Apply limiter at every RK stage
-            if (this->limiter) {
-                this->limiter->limit(this->dg->solution,
-                    this->dg->dof_handler,
-                    this->dg->fe_collection,
-                    this->dg->volume_quadrature_collection,
-                    this->dg->high_order_grid->fe_system.tensor_degree(),
-                    this->dg->max_degree,
-                    this->dg->oneD_fe_collection_1state,
-                    this->dg->oneD_quadrature_collection);
-            }
-
-            //set the DG current time for unsteady source terms
-            this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(i)*dt);
-
-            this->dg->assemble_residual(false, false, false, 0.0, 10);   
-
-            if(this->all_parameters->use_inverse_mass_on_the_fly){
-                this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, this->rk_stage[i]); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
-            } else{
-                this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[i], this->dg->right_hand_side); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
-            }
-        }
-
-        // second half
-        if (this->calc_stage_a1[i] == true){
+        if (this->calc_stage[0][i] == true){
+            //std::cout<<"1"<<std::endl;
             this->rk_stage[i]=0.0;
             for (int j = 0; j < i; ++j){
                 if (this->butcher_tableau->get_a(i,j,1) != 0){
@@ -103,18 +58,60 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::step_in_time (real dt, const 
 
             //set the DG current time for unsteady source terms
             this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(i)*dt);
-
-         //   const int second_half = locations_to_evaluate_rhs.size();
-
-
-            this->dg->assemble_residual(false, false, false, 0.0, 0);   
-
+            this->dg->right_hand_side*=0.0;
+            this->dg->assemble_residual(false, false, false, 0.0, group_ID[0]);   
             if(this->all_parameters->use_inverse_mass_on_the_fly){
                 this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, this->rk_stage[i]); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
             } else{
                 this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[i], this->dg->right_hand_side); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
+            } 
+        } 
+
+        // second half
+ /*       if (this->calc_stage[1][i] == true){ 
+            this->rk_stage[i]=0.0;
+            std::cout<<"2"<<std::endl;
+            for (int j = 0; j < i; ++j){
+                if (this->butcher_tableau->get_a(i,j,2) != 0){
+                    this->rk_stage[i].add(this->butcher_tableau->get_a(i,j,2), this->rk_stage[j]);
+                }
+            } //sum(a_ij *k_j), explicit part
+            if(pseudotime) {
+                const double CFL = dt;
+                this->dg->time_scale_solution_update(rk_stage[i], CFL);
+            }else {
+                this->rk_stage[i]*=dt; 
+            }//dt * sum(a_ij * k_j)
+        
+            this->rk_stage[i].add(1.0,this->solution_update); //u_n + dt * sum(a_ij * k_j)
+
+            relaxation_runge_kutta->store_stage_solutions(i, rk_stage[i]);
+
+            this->dg->solution = this->rk_stage[i];
+
+            // Apply limiter at every RK stage
+            if (this->limiter) {
+                this->limiter->limit(this->dg->solution,
+                    this->dg->dof_handler,
+                    this->dg->fe_collection,
+                    this->dg->volume_quadrature_collection,
+                    this->dg->high_order_grid->fe_system.tensor_degree(),
+                    this->dg->max_degree,
+                    this->dg->oneD_fe_collection_1state,
+                    this->dg->oneD_quadrature_collection);
             }
-        }
+
+            //set the DG current time for unsteady source terms
+            this->dg->set_current_time(this->current_time + this->butcher_tableau->get_c(i)*dt);
+
+            this->dg->assemble_residual(false, false, false, 0.0, group_ID[1]);   
+            if(this->all_parameters->use_inverse_mass_on_the_fly){
+                this->dg->apply_inverse_global_mass_matrix(this->dg->right_hand_side, this->rk_stage[i]); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
+            } else{
+                this->dg->global_inverse_mass_matrix.vmult(this->rk_stage[i], this->dg->right_hand_side); //rk_stage[i] = IMM*RHS = F(u_n + dt*sum(a_ij*k_j))
+            } 
+        } */
+        //}
     }
     // Calculates relaxation parameter and modify the time step size as dt*=relaxation_parameter.
     // if not using RRK, the relaxation parameter will be set to 1, such that dt is not modified.
@@ -180,7 +177,7 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
 
     this->butcher_tableau->set_tableau();
 
-
+/*
     for (int j = 0; j < n_rk_stages; ++j) {
         bool rowHasTrue = false;
         for (int i = 0; i < n_rk_stages; ++i) {
@@ -201,31 +198,48 @@ void PERKODESolver<dim,real,n_rk_stages,MeshType>::allocate_ode_system ()
             }
         }
         this->calc_stage_a1.push_back(rowHasTrue);
-    } 
-   // dealii::LinearAlgebra::distributed::Vector<int> locations_to_evaluate_rhs;
+    } */
+
+    this->calc_stage.resize(2); // a1 (index 1) and a2 (index 2)
+
+    for (int stage = 1; stage <= 2; ++stage) {
+        this->calc_stage[stage - 1].resize(n_rk_stages);
+        for (int j = 0; j < n_rk_stages; ++j) {
+            bool rowHasTrue = false;
+            for (int i = 0; i < n_rk_stages; ++i) {
+                if (this->butcher_tableau->get_a(i, j, stage) != 0 || this->butcher_tableau->get_b(j) != 0) {
+                    rowHasTrue = true;
+                    break;
+                }
+            }
+            this->calc_stage[stage - 1][j] = rowHasTrue;
+        }
+    }
+
     locations_to_evaluate_rhs.reinit(this->dg->triangulation->n_active_cells());
-    evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2 ; 
-    
+    evaluate_until_this_index = locations_to_evaluate_rhs.size() / 2; 
+    second_half = locations_to_evaluate_rhs.size();
+
     for (int i = 0; i < evaluate_until_this_index; ++i){
-        if (locations_to_evaluate_rhs.in_local_range(i))      locations_to_evaluate_rhs(i) = 1;
+        if (locations_to_evaluate_rhs.in_local_range(i))
+            locations_to_evaluate_rhs(i) = 1;
     }
     locations_to_evaluate_rhs.update_ghost_values();
+    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, group_ID[0]);
 
-    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 10); 
-    //std::cout << "Assigned group ID." << std::endl;
-    //solve the system's right hande side 
 
-    this->dg->right_hand_side*=0;
-
+    //locations_to_evaluate_rhs = 0;
+    //locations_to_evaluate_rhs.update_ghost_values();
+/*
     for (int i = evaluate_until_this_index; i < second_half; ++i){
-        // Assign only on locally owned indices.
-        locations_to_evaluate_rhs(i) = 1;
+        if (locations_to_evaluate_rhs.in_local_range(i))
+            locations_to_evaluate_rhs(i) = 1;
     }
-
     locations_to_evaluate_rhs.update_ghost_values();
-    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, 0);
-    this->dg->right_hand_side*=0; 
+    this->dg->set_list_of_cell_group_IDs(locations_to_evaluate_rhs, group_ID[1]);
 
+    this->dg->right_hand_side *= 0;
+*/
 }
 
 template class PERKODESolver<PHILIP_DIM, double,10, dealii::Triangulation<PHILIP_DIM> >;

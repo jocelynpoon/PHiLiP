@@ -138,12 +138,9 @@ void ODESolverFactory<dim,real,MeshType>::display_error_ode_solver_factory(Param
                                                                         solver_string = "hyper_reduced_petrov_galerkin";
     else if (ode_solver_type == ODEEnum::low_storage_runge_kutta_solver)    
                                                                         solver_string = "low_storage_runge_kutta_solver";
-<<<<<<< HEAD
+    else if (ode_solver_type == ODEEnum::pod_galerkin_runge_kutta)      solver_string = "pod_galerkin_runge_kutta";
     else if (ode_solver_type == ODEEnum::PERK_solver)    
                                                                         solver_string = "PERK_solver";
-=======
-    else if (ode_solver_type == ODEEnum::pod_galerkin_runge_kutta)      solver_string = "pod_galerkin_runge_kutta";
->>>>>>> a81f1b46... Added RKBase and Changed RKODESolver
     else solver_string = "undefined";
     
 
@@ -249,62 +246,6 @@ std::shared_ptr<ODESolverBase<dim,real,MeshType>> ODESolverFactory<dim,real,Mesh
         }
     } else {
         display_error_ode_solver_factory(ode_solver_type, false);
-        return nullptr;
-    }
-}
-
-template <int dim, typename real, typename MeshType> 
-std::shared_ptr<ODESolverBase<dim,real,MeshType>> ODESolverFactory<dim,real,MeshType>::create_RungeKuttaODESolver(std::shared_ptr< DGBase<dim, real, MeshType> > dg_input, std::shared_ptr<ProperOrthogonalDecomposition::PODBase<dim>> pod)
-{
-    dealii::ConditionalOStream pcout(std::cout, dealii::Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)==0);
-
-    std::shared_ptr<RKTableauBase<dim,real,MeshType>> rk_tableau = create_RKTableau(dg_input);
-
-    const int n_rk_stages = dg_input->all_parameters->ode_solver_param.n_rk_stages;
-    using ODEEnum = Parameters::ODESolverParam::ODESolverEnum;
-    const ODEEnum ode_solver_type = dg_input->all_parameters->ode_solver_param.ode_solver_type;
-    if (ode_solver_type == ODEEnum::pod_galerkin_rk_solver) {
-        // Hard-coded templating of n_rk_stages because it is not known at compile time
-        pcout << "Creating Galerkin Runge Kutta ODE Solver with " 
-              << n_rk_stages << " stage(s)..." << std::endl;
-        if (n_rk_stages == 1){
-            return std::make_shared<PODGalerkinRKODESolver<dim,real,1,MeshType>>(dg_input,rk_tableau,pod);
-        }
-        else if (n_rk_stages == 2){
-            return std::make_shared<PODGalerkinRKODESolver<dim,real,2,MeshType>>(dg_input,rk_tableau,pod);
-        }
-        else if (n_rk_stages == 3){
-            return std::make_shared<PODGalerkinRKODESolver<dim,real,3,MeshType>>(dg_input,rk_tableau,pod);
-        }
-        else if (n_rk_stages == 4){
-            return std::make_shared<PODGalerkinRKODESolver<dim,real,4,MeshType>>(dg_input,rk_tableau,pod);
-        }
-        else{
-            pcout << "Error: invalid number of stages. Aborting..." << std::endl;
-            std::abort();
-            return nullptr;
-        }
-    }
-    else {
-        display_error_ode_solver_factory(ode_solver_type, false);
-        return nullptr;
-    }
-}
-
-template <int dim, typename real, typename MeshType>
-std::shared_ptr<PERKTableauBase<dim,real,MeshType>> ODESolverFactory<dim,real,MeshType>::create_PERKTableau(std::shared_ptr< DGBase<dim,real,MeshType>> dg_input)
-{
-
-    dealii::ConditionalOStream pcout(std::cout, dealii::Utilities::MPI::this_mpi_process(MPI_COMM_WORLD)==0);
-    using RKMethodEnum = Parameters::ODESolverParam::RKMethodEnum;
-    const RKMethodEnum rk_method = dg_input->all_parameters->ode_solver_param.runge_kutta_method;
-
-    const int n_rk_stages = dg_input->all_parameters->ode_solver_param.n_rk_stages;
-    
-    if (rk_method == RKMethodEnum::PERK_10_2)   return std::make_shared<PERK_10_2<dim, real, MeshType>> (n_rk_stages, "PERK_10_2");
-    else {
-        pcout << "Error: invalid PERK method. Aborting..." << std::endl;
-        std::abort();
         return nullptr;
     }
 }
