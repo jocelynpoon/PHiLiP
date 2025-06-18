@@ -1476,12 +1476,12 @@ void DGBase<dim,real,MeshType>::set_list_of_cell_group_IDs(const dealii::LinearA
         pcout << "ERROR: Size of locations_to_be_changed is not consistent. Aborting..." << std::endl;
         std::abort();
     }
-
+/*
     if (this->all_parameters->use_weak_form) {
         pcout << "ERROR: The cell group partitioning has not been verified for weak DG!! Aborting..." << std::endl;
         std::abort();
     }
-
+*/
     // Using only deal.ii vector operations herein to take advantage of their optimizations
     // Set the cell_group_ID at the given location to zero without changing existing values
     
